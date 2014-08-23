@@ -1,0 +1,1 @@
+dist\build\agflow2\agflow2.exe < data/t4 > data\t4.output1
