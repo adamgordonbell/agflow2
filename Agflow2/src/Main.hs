@@ -17,19 +17,20 @@ main = do
 strToInt :: String -> [Int]
 strToInt s = fmap read $ splitOn " " s
 
-strLToIntL :: [String] -> Int
+--strLToIntL :: [String] -> Int
 strLToIntL xs = answer $ map strToInt xs
     
-answer :: [[Int]] -> Int
-answer (first:second:third:[]) = count
+--answer :: [[Int]] -> Int
+answer (first:second:third:[]) = length $ sp
     where
-        sp = reorderings secondRow
-        tp = reorderings thridRow
-        best = (zipWith check1) <$> (checker sp) <*> (checker tp)
+        sp = reorderings second
+        tp = reorderings third
+        best = sorter ((zipWith check1) <$> (checker sp first) <*> (checker tp first))
+        -- this is the answer
         count = head $ (length . catMaybes <$> best) ++ [1]
         
 reorderings :: [Int] -> [[Int]]
-reorderings xs = take len . map (take len) . tails . cycle $ xs
+reorderings xs = take len $! map (take len) . tails . cycle $ xs
   where len = length xs
             
 check :: Int -> Int -> Maybe Int        
@@ -47,15 +48,16 @@ check1 (Just x) (Just y) = case (x ==y) of
           
 sorter =  reverse . sortWith (length . catMaybes)            
 
-checker r = takeWhile (lenFilter) sorted
- where  checkerResults = (zipWith check firstRow) <$> r
+checker :: [[Int]] -> [Int] -> [[Maybe Int]]
+checker r f = takeWhile (lenFilter) sorted
+ where  checkerResults = (zipWith check f) <$> r
         sorted = sorter checkerResults
         lenFilter x = length (catMaybes x) > 1
                             
-firstRow, secondRow, thridRow :: [Int]
-firstRow = [1, 5, 4, 3, 2]
-secondRow = [1, 3, 2, 4, 5]
-thridRow = [2, 1, 5, 4, 3]
+-- firstRow, secondRow, thridRow :: [Int]
+-- firstRow = [1, 5, 4, 3, 2]
+-- secondRow = [1, 3, 2, 4, 5]
+-- thridRow = [2, 1, 5, 4, 3]
 
-sp = reorderings secondRow
-tp = reorderings thridRow
+-- sp = reorderings secondRow
+-- tp = reorderings thridRow
