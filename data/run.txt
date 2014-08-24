@@ -1,1 +1,11 @@
+Pipe in and out:
 dist\build\agflow2\agflow2.exe < data/t4 > data\t4.output1
+
+
+dist\build\agflow2\agflow2.exe < data/t4.in
+
+
+build with profiling:
+
+>ghc --make -O2 Agflow2\src\Main.hs -prof -auto-all -caf-all -fforce-recomp -rtsopts
+>Agflow2\src\Main.exe +RTS -sstderr -p < data\t4.in

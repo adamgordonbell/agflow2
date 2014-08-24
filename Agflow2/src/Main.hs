@@ -1,3 +1,5 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE BangPatterns #-}
 module Main where
 
 import Control.Applicative
@@ -8,6 +10,9 @@ import Data.List
 import Data.Ord
 import Data.Maybe
 import GHC.Exts
+import qualified Data.Sequence
+import qualified Data.Foldable
+import qualified Data.Vector as V
 
 main = do
   n <- readLn :: IO Int
@@ -21,16 +26,16 @@ strToInt s = fmap read $ splitOn " " s
 strLToIntL xs = answer $ map strToInt xs
     
 --answer :: [[Int]] -> Int
-answer (first:second:third:[]) = length $ sp
+answer (first:second:third:[]) = count
     where
         sp = reorderings second
         tp = reorderings third
-        best = sorter ((zipWith check1) <$> (checker sp first) <*> (checker tp first))
+        best = ((zipWith checkRowMatches) <$> (checkerConvert sp first) <*> (checkerConvert tp first))
         -- this is the answer
-        count = head $ (length . catMaybes <$> best) ++ [1]
+        count = foldr1 max $ (length . catMaybes <$> best) ++ [1]
         
 reorderings :: [Int] -> [[Int]]
-reorderings xs = take len $! map (take len) . tails . cycle $ xs
+reorderings !xs = take len $! map (take len) . tails . cycle $ xs
   where len = length xs
             
 check :: Int -> Int -> Maybe Int        
@@ -38,26 +43,28 @@ check x y
     | x == y = Just x
     | otherwise = Nothing
     
-check1 :: Maybe Int -> Maybe Int -> Maybe Int        
-check1 Nothing _ = Nothing
-check1 _  Nothing = Nothing
-check1 (Just x) (Just y) = case (x ==y) of 
+checkRowMatches :: Maybe Int -> Maybe Int -> Maybe Int        
+checkRowMatches Nothing _ = Nothing
+checkRowMatches _  Nothing = Nothing
+checkRowMatches (Just x) (Just y) = case (x ==y) of 
                             True -> Just x
                             _ -> Nothing
           
           
-sorter =  reverse . sortWith (length . catMaybes)            
+sorter x =  reverse1 . sortWith (length . catMaybes) $ x        
+        where reverse1 = Data.Foldable.toList . Data.Sequence.reverse . Data.Sequence.fromList 
 
-checker :: [[Int]] -> [Int] -> [[Maybe Int]]
-checker r f = takeWhile (lenFilter) sorted
- where  checkerResults = (zipWith check f) <$> r
-        sorted = sorter checkerResults
-        lenFilter x = length (catMaybes x) > 1
-                            
--- firstRow, secondRow, thridRow :: [Int]
--- firstRow = [1, 5, 4, 3, 2]
--- secondRow = [1, 3, 2, 4, 5]
--- thridRow = [2, 1, 5, 4, 3]
+checkerConvert :: [[Int]] -> [Int] -> [[Maybe Int]]
+checkerConvert r f = go
+    where r1 = V.fromList `V.map` V.fromList r
+          f1 =  V.fromList f
+          go = unmap $ checker1 r1 f1
+          unmap x =  V.toList <$>  V.toList x 
 
--- sp = reorderings secondRow
--- tp = reorderings thridRow
+checker1 :: V.Vector (V.Vector Int) -> V.Vector Int -> V.Vector (V.Vector (Maybe Int))
+checker1 r f = sorted
+ where  
+        checkerResults = (V.zipWith check f) `V.map` r
+        sorted = filterRs checkerResults
+        filterRs rs =  V.filter (lenFilter) rs
+        lenFilter x = length (catMaybes (V.toList x)) > 1       
