@@ -4,64 +4,39 @@ module Main where
 
 import Control.Applicative
 import Data.List.Split
-import Debug.Trace
-import Data.List
-import Data.Maybe
-import GHC.Exts
-import qualified Data.Sequence
-import qualified Data.Foldable
-import qualified Data.Vector as V
+import qualified Data.Map.Strict as Map
+import Data.Map.Strict (Map)
+import qualified Data.List
 
 main = do
   n <- readLn :: IO Int
   input <- fmap (take n . lines) getContents
-  print . strLToIntL $ input
+  print $ strLToIntL n input
 
 strToInt :: String -> [Int]
 strToInt s = read <$> splitOn " " s
 
---strLToIntL :: [String] -> Int
-strLToIntL xs = answer $ map strToInt xs
+strLToIntL :: Int -> [String] -> Int
+strLToIntL max xs = answer max  (fmap strToInt xs)
 
---answer :: [[Int]] -> Int
-answer [first, second, third] = count
-    where
-        sp = reorderings second
-        tp = reorderings third
-        best = zipWith checkRowMatches <$> checkerConvert sp first <*> checkerConvert tp first
-        -- this is the answer
-        count = maximum $ (length . catMaybes <$> best) ++ [1]
-answer _ = 0
+answer :: Int -> [[Int]] -> Int
+answer max xs = count $ countMap $ buildMap max xs
 
-reorderings :: [Int] -> [[Int]]
-reorderings !xs = take len $! map (take len) . tails . cycle $ xs
-  where len = length xs
+count :: Map [Int] Int -> Int
+count map = maximum $ fmap snd (Map.toList map)
 
-check :: Int -> Int -> Maybe Int
-check x y
-    | x == y = Just x
-    | otherwise = Nothing
+countMap :: Map Int [Int] -> Map [Int] Int
+countMap ans = Map.fromListWith (+) $ fmap (\(x,y) -> (y,1)) (Map.toList ans)
 
-checkRowMatches :: Maybe Int -> Maybe Int -> Maybe Int
-checkRowMatches Nothing _ = Nothing
-checkRowMatches _  Nothing = Nothing
-checkRowMatches (Just x) (Just y) = if x == y then Just x else Nothing
+buildMap ::Int -> [[Int]] -> Map Int [Int]
+buildMap max xs = Map.map (rebaseNumbers max) $ Data.List.foldl' (flip index) Map.empty xs
 
+index :: [Int] -> Map Int [Int] -> Map Int [Int]
+index xs  m = Map.unionWith (++) m (Map.fromList $ pairs xs)
 
-sorter x =  reverse1 . sortWith (length . catMaybes) $ x
-        where reverse1 = Data.Foldable.toList . Data.Sequence.reverse . Data.Sequence.fromList
+pairs :: [Int] -> [(Int,[Int])]
+pairs xs = zip xs (fmap (\x -> [x]) [1..])
 
-checkerConvert :: [[Int]] -> [Int] -> [[Maybe Int]]
-checkerConvert r f = go
-    where r1 = V.fromList `V.map` V.fromList r
-          f1 =  V.fromList f
-          go = unmap $ checker1 r1 f1
-          unmap x =  V.toList <$>  V.toList x
-
-checker1 :: V.Vector (V.Vector Int) -> V.Vector Int -> V.Vector (V.Vector (Maybe Int))
-checker1 r f = sorted
- where
-        checkerResults = V.zipWith check f `V.map` r
-        sorted = filterRs checkerResults
-        filterRs =  V.filter lenFilter
-        lenFilter x = length (catMaybes (V.toList x)) > 1
+rebaseNumbers :: Int -> [Int] -> [Int]
+rebaseNumbers max xs@(x:_) = fmap (\y -> (y + max) `mod` max) shift
+  where shift = fmap (\y -> y - x + 1) xs
