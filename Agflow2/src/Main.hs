@@ -10,14 +10,11 @@ import qualified Data.List
 main :: IO ()
 main = do
   n <- readLn :: IO Int
-  input <- fmap (take n . lines) getContents
-  print $ strLToIntL n input
+  input <- fmap (fmap strToInt . take n . lines) getContents
+  print $ answer n input
 
 strToInt :: String -> [Int]
 strToInt s = read <$> splitOn " " s
-
-strLToIntL :: Int -> [String] -> Int
-strLToIntL mx xs = answer mx  (fmap strToInt xs)
 
 answer :: Int -> [[Int]] -> Int
 answer mx xs = count $ countMap $ buildMap mx xs
