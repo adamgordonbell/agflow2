@@ -33,13 +33,10 @@ mostCommonPositionCount ans = maximum count
 
 getPositionMap :: Max -> [Reel] -> PositionMap
 getPositionMap mx xs = Map.map (rebasePositions mx) mapIndex
-  where mapIndex = Data.List.foldl' index Map.empty xs
-
-index :: PositionMap -> Reel -> PositionMap
-index  m xs = Map.unionWith (++) m (Map.fromList $ pairs xs)
-
-pairs :: Reel -> [(Int,[Int])]
-pairs xs = zip xs (fmap (: []) [1..])
+  where
+    mapIndex = Data.List.foldl' index Map.empty xs
+    index m is = Map.unionWith (++) m (Map.fromList $ pairs is)
+    pairs ps = zip ps (fmap (: []) [1..])
 
 rebasePositions :: Max -> Positions -> Positions
 rebasePositions mx xs@(x:_) = fmap (rebase . normalize) xs
