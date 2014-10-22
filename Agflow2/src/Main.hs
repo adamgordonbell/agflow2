@@ -8,8 +8,9 @@ import Data.Map.Strict (Map)
 import qualified Data.List
 
 type Reel = [Int]
+-- a position is a list of the locations of a number in each reel
 type Positions = [Int]
--- for each number, what are its positions in each reel
+-- map of positions
 type PositionMap = Map Int Positions
 -- numbers in reel are from 1..Max
 type Max = Int
@@ -23,6 +24,7 @@ main = do
     readReel s = read <$> splitOn " " s
     answer mx xs = mostCommonPositionCount $ getPositionMap mx xs
 
+-- get count of most common position
 mostCommonPositionCount :: PositionMap -> Int
 mostCommonPositionCount ans = maximum count
  where
@@ -38,6 +40,7 @@ getPositionMap mx xs = Map.map (rebasePositions mx) mapIndex
     index m is = Map.unionWith (++) m (Map.fromList $ pairs is)
     pairs ps = zip ps (fmap (: []) [1..])
 
+-- this is the key, we rebase the positions so that they represent rotations of the reel
 rebasePositions :: Max -> Positions -> Positions
 rebasePositions mx xs@(x:_) = fmap (rebase . normalize) xs
   where
